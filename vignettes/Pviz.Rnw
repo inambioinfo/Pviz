@@ -1,0 +1,223 @@
+%\VignetteEngine{knitr::knitr}
+%\VignetteIndexEntry{The Pviz users guide}
+%\VignetteDepends{Pviz, knitr}
+%\VignetteKeywords{Visualization}
+%\VignettePackage{Pviz}
+\documentclass[11pt]{article}
+
+\usepackage{hyperref}
+\usepackage[hmargin=2cm, vmargin=3cm]{geometry}
+
+<<include=FALSE>>=
+library(knitr)
+opts_chunk$set(tidy=FALSE)
+@
+
+
+\title{The Pviz User Guide}
+\author{Renan Sauteraud\footnote{rsautera@fhcrc.org}}
+
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+
+\section{Introduction}
+\texttt{Pviz} is an R package inspired by and depending on \texttt{Gviz}. It
+introduces new types of track and extends the existing ones in order to deal
+with amino-acid based data.
+
+This package keeps most of the mechanics of \texttt{Gviz}, notably the use of
+\texttt{DisplayParameters} and the same plotting function: \texttt{plotTracks}.
+Therefore, the user is invited to refer to \texttt{Gviz} help pages and vignette
+for more information and examples.
+
+As with any R package, it should first be loaded in the session
+<<loading-package, message=FALSE>>=
+library(Pviz)
+@
+
+
+
+\section{Gviz tracks}
+\texttt{Pviz} extends and uses the most common classes of \texttt{Gviz} to make
+them easier to use with amino acid data. We removed the requirement for a genome
+and a chromosome when creating these tracks. Moreover, they support the
+functions defined in Pviz.
+
+\subsection{ATrack}
+\texttt{ATrack} extends Gviz's \texttt{AnnotationTrack} and behaves the same way.
+However, it does not require to specify a chromosome and a genome. Please refer
+to \texttt{Gviz} documentation for more details about \texttt{AnnotationTrack}
+and the available \texttt{DisplayParameters}.
+<<ATrack-example, fig.height=1.5>>=
+at<-ATrack(start = c(250, 480), end = c(320, 520), id = c("Anno1", "Anno2"),
+           showFeatureId = TRUE, fontcolor = "black", name = "Annotations")
+plotTracks(at, from = 1, to = 600)
+@
+
+\subsection{DTrack}
+Naturally \texttt{DTrack} extends Gviz's \texttt{DataTrack}. Here again, please
+refer to \texttt{Gviz} documentation for details on how to use
+\texttt{DataTrack}.
+
+Some example data are available in the data package \texttt{pepDat}. Frequency
+of antibody binding event in hxb2 enveloppe peptides.
+<<DTrack-example, fig.height=4>>=
+library(pepDat)
+data(restab_aggregate)
+dt <- DTrack(data = restab_aggregate$group2, start = restab_aggregate$start,
+             width=15, name="Freq", type = "l")
+plotTracks(dt, from = 1, to = 850, type = "l")
+@
+
+
+\section{Pviz new track types}
+\texttt{Pviz} introduce some new track types to deal with amino-acid based data.
+The new tracks look can be modified using the \texttt{DisplayParameters} and
+will most of the time offer the same options as the ones available for
+\texttt{Gviz} tracks.
+
+\subsection{ProteinAxisTrack}
+This track acts as a replacement for the \texttt{GenomeAxisTrack}. I comes
+with the same coloration, transparency and other customization options but loses
+the DNA representation for a simple segment.
+
+<<ProteinAxisTrack-basic, fig.height=1.1>>=
+pat<-ProteinAxisTrack()
+plotTracks(pat, from = 1, to = 850)
+@
+
+Just like in \texttt{GenomeAxisTrack}, it is possible to use littleTicks to get
+a more precise scale. Moreover, because \texttt{Pviz}, has been made to deal
+with peptides and protein, the option addNC can display indicators for N-term
+and C-term ends on the axis.
+
+<<ProteinAxisTrack-options, fig.height=1.1>>=
+pat<-ProteinAxisTrack(addNC = TRUE, littleTicks = TRUE)
+plotTracks(pat, from = 1, to = 850)
+@
+
+\subsection{ProteinSequenceTrack}
+This new track simply displays a selected sequence. It can takes both
+\texttt{AAstring} or regular \texttt{character}.
+
+Note that the first amino acid of the sequence should correspond to the first
+position of any other element you choose to display at the same time.
+
+The previously loaded dataset also contains the sequence of the envelope of
+hxb2 to be used as an example.
+The peptide collections in \texttt{pepDat} contain reference sequence as
+metadata. Here hxb2 sequence is displayed.
+<<ProteinSequenceTrack-basic, fig.height=1.5>>=
+data(pep_hxb2)
+hxb2_seq <- metadata(pep_hxb2)$sequence
+st <- ProteinSequenceTrack(sequence = hxb2_seq, name = "env")
+plotTracks(trackList = c(pat, st), from = 1, to = 40)
+@
+
+The sequence track for proteins handles overplotting the same way it does it for nucleotides.
+If the plotting range becomes wider, only the color code will be displayed. Once it becomes too big to even show these colors, a straight line will be displaed. Naturally, the character size will also influence what can be displayed in the graphic window.
+
+<<ProteinSequenceTrack-unreadable, fig.height=1.5>>=
+st <- ProteinSequenceTrack(sequence = hxb2_seq, name = "env", cex = 0.5)
+plotTracks(trackList = c(pat, st), from = 1, to = 850)
+@
+
+Although the character expansion has been set to less than 1. The ranges are
+still too wide for a correct display and only a straight line will be displayed.
+
+\subsection{ProbeTrack}
+This track is designed to display peptide microarray data. It draws each peptide
+relative to its position in the sequence and enclose them in rectangles colored
+depending on their frequency of binding event or intensity. It is useful to spot
+differences between clades at a specific position or get an overview of the
+regions with antibody binding activity, depending on the scale used while
+plotting.
+
+To create this track, the sequence of the peptides, their intensity or
+frequency and their starting position have to be passed as arguments. All three
+arguments should be of the same length. Here, the result of a peptide microarray
+analysis is used. This time with clade specific calls.
+<<ProbeTrack-basic, fig.width=9, fig.height=4.5>>=
+data(restab)
+pt<-ProbeTrack(sequence = restab$peptide, intensity = restab$group2,
+               probeStart = restab$start)
+plotTracks(pt, from = 460, to = 560)
+@
+
+
+Unlike in \texttt{ProteinSequenceTrack}, the size of the characters in each peptide
+sequence depends on the plotting ranges (the user can still choose to change the
+size manually) and if the ranges become too wide, the characters will appear as
+dots or completely disappear instead of stacking on top of each other.
+While it loses the sequence information, it might be relevant to locate regions
+where peptides have high intensity/frequency.
+<<ProbeTrack-wide-ranges, fig.width=9, fig.height=4.5>>=
+plotTracks(pt, legend = TRUE)
+@
+For a more explicit display, a legend has been implemented for this track and
+can be called during track creation or in the plotting function. The legend
+displays the scale of frequencies.
+
+
+\subsection{CladeTrack}
+Finally, after displaying all peptides, it is possible to look at clades of
+interest or compare the binding activity in different clades.
+
+\texttt{CladeTrack} extends \texttt{DTrack} and adds a new constructor that can
+use the result of a peptide microarray analysis from \texttt{pepStat} to create
+the track. The display parameters are the same as in \texttt{DTrack} and
+\texttt{Gviz}'s \texttt{DataTrack}.
+
+<<CladeTrack, fig.width=9, fig.height=4>>=
+ctA <- CladeTrack(restab, clade = "A", type = "l")
+ctM <- CladeTrack(restab, clade = "M", type = "l", legend = TRUE)
+plotTracks(c(ctA, ctM), main = "Clades comparison", cex.main = 1.5)
+@
+
+
+\section{Example of plot}
+Naturally, the interest of \texttt{Pviz}, just like its parent \texttt{Gviz}
+is the display of multiple tracks at once.
+Here is an example of what \texttt{Pviz} can render, using the tracks previously
+created.
+<<complex-plot, fig.width=9, fig.height=6>>=
+pt <- ProbeTrack(sequence = restab$peptide, intensity = restab$group2,
+               probeStart = restab$start, cex=0, legend=TRUE)
+plotTracks(trackList=c(pat, st, at, pt, ctM), from=460, to=560,
+           type="l")
+@
+
+\section{Summary plots}
+As part of the pipeline for peptide microarray analysis, the package provides
+two function to quickly dispplay the result of an experiment. These ploting
+functions come with a selected set of tracks as well as hard coded annotations
+for hxb2 enveloppe landmarks. The function are used as a display in the shinyApp
+that comes with \texttt{pepStat}.
+
+More information regarding the plots and the analysis are available in the
+vignette of the \texttt{pepStat} package. The additional display parameters are
+passed directly to the \texttt{plotTracks} function.
+
+\subsection{plot\_inter}
+First we can plot the result of an experiment:
+<<plot-inter, fig.width=9, fig.height=4>>=
+plot_inter(restab_aggregate)
+@
+
+\subsection{plot\_clade}
+Then redo a clade specific analysis and plot the results for clade of interest:
+<<plot-clade, fig.width=9, fig.height=4>>=
+plot_clade(restab, clade = c("A", "B", "C"), sequence = hxb2_seq,
+           from = 100, to = 600)
+@
+
+\newpage
+\section{sessionInfo}
+<<sessionInfo>>=
+sessionInfo()
+@
+
+\end{document}
