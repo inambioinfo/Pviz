@@ -1,0 +1,23 @@
+Package: Pviz
+Type: Package
+Title: Peptide Annotation and Data Visualization using Gviz
+Version: 1.0.0
+Author: Renan Sauteraud, Mike Jiang, Raphael Gottardo
+Maintainer: Renan Sauteraud <rsautera@fhcrc.org>
+Description: Pviz adapts the Gviz package for protein sequences and data.
+License: Artistic-2.0
+Depends:
+    R(>= 3.0.0),
+    Gviz(>= 1.7.10)
+Imports:
+    biovizBase,
+    Biostrings,
+    GenomicRanges,
+    IRanges,
+    data.table,
+    methods
+Suggests:
+    knitr,
+    pepDat
+biocViews: Visualization, Proteomics, Microarray
+VignetteBuilder: knitr
